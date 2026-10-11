@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Money Mate — Your money, made simple.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="matcha">
+
+<div class="mobile-topbar">
+  <button class="icon-btn" id="mobileMenuBtn" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>
+  <div class="mobile-logo"><i class="fa-solid fa-seedling"></i> Money Mate</div>
+  <div class="mobile-topbar-actions">
+    <button class="icon-btn" id="mobileNotifBtn" aria-label="Notifications"><i class="fa-solid fa-bell"></i><span class="notif-dot" id="mobileNotifDot" hidden></span></button>
+    <button class="icon-btn" data-open="tx" aria-label="Add transaction"><i class="fa-solid fa-plus"></i></button>
+  </div>
+</div>
+
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-mark"><i class="fa-solid fa-seedling"></i></span>
+      <div class="brand-text"><span class="brand-name">Money Mate</span><span class="brand-tagline">Your money, made simple.</span></div>
+    </div>
+    <nav class="side-nav" aria-label="Main navigation">
+      <button class="nav-item is-active" data-page="dashboard"><i class="fa-solid fa-house"></i><span>Dashboard</span></button>
+      <button class="nav-item" data-page="transactions"><i class="fa-solid fa-wallet"></i><span>Transactions</span></button>
+      <button class="nav-item" data-page="budget"><i class="fa-solid fa-chart-simple"></i><span>Budget</span></button>
+      <button class="nav-item" data-page="due"><i class="fa-solid fa-calendar-day"></i><span>Due Payments</span></button>
+      <div class="nav-spacer"></div>
+      <button class="nav-item" data-page="settings"><i class="fa-solid fa-gear"></i><span>Settings</span></button>
+      <button class="nav-item nav-sub" data-page="settings" data-scroll="profilePanel"><i class="fa-solid fa-user"></i><span>Profile</span></button>
+    </nav>
+    <button class="sidebar-add-btn" data-open="tx"><i class="fa-solid fa-plus"></i> Add transaction</button>
+  </aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="main-content">
+    <header class="top-header">
+      <div class="greeting">
+        <h1 id="greetingText">Good morning!</h1>
+        <p>Here's your money at a glance.</p>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="notifBtn" aria-label="Notifications" aria-expanded="false"><i class="fa-solid fa-bell"></i><span class="notif-dot" id="notifDot" hidden></span></button>
+        <button class="avatar-btn" data-page="settings" data-scroll="profilePanel" aria-label="Profile"><span id="avatarInitial">M</span></button>
+      </div>
+    </header>
+
+    <!-- DASHBOARD -->
+    <section class="page is-active" id="page-dashboard">
+      <div class="filter-row">
+        <div class="segmented" id="dateFilter" aria-label="Date range">
+          <button class="seg-btn" data-range="today">Today</button>
+          <button class="seg-btn" data-range="week">This week</button>
+          <button class="seg-btn is-active" data-range="month">This month</button>
+          <button class="seg-btn" data-range="year">This year</button>
+        </div>
+      </div>
+      <div class="summary-grid">
+        <div class="summary-card card-balance"><div class="summary-icon"><i class="fa-solid fa-leaf"></i></div><p class="summary-label">Total balance <small>(all time)</small></p><p class="summary-value" id="statBalance">₹0</p></div>
+        <div class="summary-card card-income"><div class="summary-icon"><i class="fa-solid fa-arrow-down"></i></div><p class="summary-label" id="labelIncome">Income</p><p class="summary-value" id="statIncome">₹0</p></div>
+        <div class="summary-card card-expense"><div class="summary-icon"><i class="fa-solid fa-arrow-up"></i></div><p class="summary-label" id="labelExpense">Expenses</p><p class="summary-value" id="statExpense">₹0</p></div>
+        <div class="summary-card card-budget">
+          <p class="summary-label">Monthly budget</p>
+          <p class="summary-value" id="statBudget">₹0</p>
+          <div class="progress-track"><div class="progress-fill" id="dashBudgetFill"></div></div>
+          <p class="budget-caption" id="dashBudgetCaption">No budget set</p>
+        </div>
+      </div>
+      <div class="dash-grid">
+        <div class="dash-col-main">
+          <div class="panel"><h2>Income vs expenses</h2><div class="chart-wrap"><canvas id="trendChart"></canvas></div></div>
+          <div class="panel"><div class="panel-head"><h2>Recent transactions</h2><button class="link-btn" data-page="transactions">See all</button></div><div id="dashRecentList" class="transaction-list"></div></div>
+        </div>
+        <div class="dash-col-side">
+          <div class="panel">
+            <h2>Where it went</h2>
+            <div class="chart-wrap chart-wrap-donut"><canvas id="categoryChart"></canvas><div class="chart-empty" id="catEmpty" hidden>No expenses yet 🌱</div></div>
+            <div id="categoryLegend" class="category-legend"></div>
+          </div>
+          <div class="panel"><div class="panel-head"><h2>Upcoming payments</h2><button class="link-btn" data-page="due">See all</button></div><div id="dashDueList" class="due-list"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRANSACTIONS -->
+    <section class="page" id="page-transactions">
+      <div class="page-head"><h1>Transactions</h1><button class="primary-btn" data-open="tx"><i class="fa-solid fa-plus"></i> Add transaction</button></div>
+      <div class="toolbar">
+        <div class="search-box"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="searchInput" placeholder="Search name, note or category" aria-label="Search"></div>
+        <div class="toolbar-controls">
+          <select id="typeFilterSelect" aria-label="Type"><option value="all">All types</option><option value="income">Income only</option><option value="expense">Expense only</option></select>
+          <select id="sortSelect" aria-label="Sort"><option value="date-desc">Newest first</option><option value="date-asc">Oldest first</option><option value="amount-desc">Amount: high to low</option><option value="amount-asc">Amount: low to high</option></select>
+        </div>
+      </div>
+      <div class="filter-row">
+        <div class="segmented" id="dateFilterTx">
+          <button class="seg-btn" data-range="today">Today</button>
+          <button class="seg-btn" data-range="week">This week</button>
+          <button class="seg-btn is-active" data-range="month">This month</button>
+          <button class="seg-btn" data-range="year">This year</button>
+          <button class="seg-btn" data-range="all">All time</button>
+          <button class="seg-btn" data-range="custom">Custom</button>
+        </div>
+        <div class="custom-range" id="customRangeRow" hidden>
+          <input type="date" id="customFrom" aria-label="From"><span>to</span><input type="date" id="customTo" aria-label="To">
+          <button class="mini-btn" id="applyCustomRange">Apply</button>
+        </div>
+      </div>
+      <div class="panel"><p class="panel-sub" id="txSummary"></p><div id="txFullList" class="transaction-list"></div></div>
+    </section>
+
+    <!-- BUDGET -->
+    <section class="page" id="page-budget">
+      <div class="page-head"><h1>Budget</h1></div>
+      <div class="panel">
+        <div class="budget-hero-top">
+          <div><p class="summary-label">Monthly budget</p><p class="budget-hero-amount" id="budgetAmount">₹0</p></div>
+          <button class="secondary-btn" data-open="budget"><i class="fa-solid fa-pen"></i> <span id="budgetBtnLabel">Set budget</span></button>
+        </div>
+        <div class="progress-track progress-track-lg"><div class="progress-fill" id="budgetFill"></div></div>
+        <div class="budget-hero-stats">
+          <div><span class="dot dot-expense"></span>Spent <strong id="budgetSpent">₹0</strong></div>
+          <div><span class="dot dot-income"></span>Remaining <strong id="budgetRemaining">₹0</strong></div>
+          <div>Used <strong id="budgetPercent">0%</strong></div>
+        </div>
+        <p class="budget-message" id="budgetMessage" hidden></p>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Category budgets</h2><button class="secondary-btn" data-open="cat"><i class="fa-solid fa-plus"></i> Add category</button></div>
+        <p class="panel-sub">Optional monthly limits for expense categories. Amounts are for the current month.</p>
+        <div id="categoryBudgetGrid" class="cat-budget-grid"></div>
+      </div>
+      <div class="panel">
+        <h2>Your categories</h2>
+        <div id="categoryChips"></div>
+      </div>
+    </section>
+
+    <!-- DUE -->
+    <section class="page" id="page-due">
+      <div class="page-head"><h1>Due Payments</h1><button class="primary-btn" data-open="due"><i class="fa-solid fa-plus"></i> Add payment</button></div>
+      <div class="filter-row"><div class="segmented" id="dueFilter">
+        <button class="seg-btn is-active" data-due-filter="unpaid">Unpaid</button>
+        <button class="seg-btn" data-due-filter="paid">Paid</button>
+        <button class="seg-btn" data-due-filter="all">All</button>
+      </div></div>
+      <div class="panel"><div id="duePaymentsFullList" class="due-list"></div></div>
+    </section>
+
+    <!-- SETTINGS (Profile lives here) -->
+    <section class="page" id="page-settings">
+      <div class="page-head"><h1>Settings</h1></div>
+      <div class="panel" id="profilePanel">
+        <h2>Profile</h2>
+        <div class="profile-avatar-row">
+          <div class="profile-avatar" id="profileAvatar">M</div>
+          <div class="field" style="flex:1;margin:0"><label class="field-label" for="profileName">Your name</label><input type="text" id="profileName" placeholder="Add your name" maxlength="30"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Theme</h2>
+        <p class="panel-sub">Saved automatically.</p>
+        <div class="theme-grid" id="themeGrid">
+          <button class="theme-swatch" data-theme="matcha"><span class="swatch swatch-matcha"></span>Matcha </button>
+          <button class="theme-swatch" data-theme="blossom"><span class="swatch swatch-blossom"></span>Blossom </button>
+          <button class="theme-swatch" data-theme="lavender"><span class="swatch swatch-lavender"></span>Lavender </button>
+          <button class="theme-swatch" data-theme="sky"><span class="swatch swatch-sky"></span>Sky </button>
+          <button class="theme-swatch" data-theme="sunshine"><span class="swatch swatch-sunshine"></span>Sunshine </button>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Currency</h2>
+        <p class="panel-sub">Changes how every amount is shown. Your saved amounts are not altered.</p>
+        <select id="currencySelect" class="settings-select">
+          <option value="INR">₹ INR — Indian Rupee</option><option value="USD">$ USD — US Dollar</option><option value="EUR">€ EUR — Euro</option><option value="GBP">£ GBP — British Pound</option><option value="JPY">¥ JPY — Japanese Yen</option>
+        </select>
+      </div>
+      <div class="panel">
+        <h2>Clear financial data</h2>
+        <p class="panel-sub">Removes transactions, budgets, due payments and custom categories. Theme, currency and name are kept.</p>
+        <button class="secondary-btn danger-outline" id="clearFinancialBtn"><i class="fa-solid fa-trash-can"></i> Clear financial data</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="notif-panel" id="notifPanel" hidden></div>
+
+<!-- Transaction modal -->
+<div class="modal-overlay" id="txModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="txModalTitle">
+    <div class="modal-head"><h2 id="txModalTitle">Add transaction</h2><button class="icon-btn" data-close aria-label="Close"><i class="fa-solid fa-xmark"></i></button></div>
+    <form id="txForm">
+      <input type="hidden" id="txId">
+      <div class="type-toggle"><button type="button" class="type-btn is-active" data-type="expense">Expense</button><button type="button" class="type-btn" data-type="income">Income</button></div>
+      <div class="field"><label class="field-label" for="txAmount">Amount</label><input type="number" id="txAmount" min="0" step="any" placeholder="0.00" required></div>
+      <div class="field"><label class="field-label" for="txCategory">Category</label><select id="txCategory" required></select></div>
+      <div class="field"><label class="field-label" for="txDescription">Description</label><input type="text" id="txDescription" placeholder="e.g. Lunch with friends" required maxlength="60"></div>
+      <div class="field-grid">
+        <div class="field"><label class="field-label" for="txDate">Date</label><input type="date" id="txDate" required></div>
+        <div class="field"><label class="field-label" for="txNote">Note (optional)</label><input type="text" id="txNote" maxlength="80"></div>
+      </div>
+      <div class="modal-actions"><button type="button" class="secondary-btn" data-close>Cancel</button><button type="submit" class="primary-btn">Save</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Category modal -->
+<div class="modal-overlay" id="catModal" hidden>
+  <div class="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="catModalTitle">
+    <div class="modal-head"><h2 id="catModalTitle">Add category</h2><button class="icon-btn" data-close aria-label="Close"><i class="fa-solid fa-xmark"></i></button></div>
+    <form id="catForm">
+      <div class="field"><label class="field-label" for="catName">Name</label><input type="text" id="catName" placeholder="e.g. Books" required maxlength="24"></div>
+      <div class="type-toggle"><button type="button" class="type-btn is-active" data-cattype="expense">Expense</button><button type="button" class="type-btn" data-cattype="income">Income</button></div>
+      <div class="modal-actions"><button type="button" class="secondary-btn" data-close>Cancel</button><button type="submit" class="primary-btn">Add</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Due modal -->
+<div class="modal-overlay" id="dueModal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="dueModalTitle">
+    <div class="modal-head"><h2 id="dueModalTitle">Add due payment</h2><button class="icon-btn" data-close aria-label="Close"><i class="fa-solid fa-xmark"></i></button></div>
+    <form id="dueForm">
+      <input type="hidden" id="dueId">
+      <div class="field"><label class="field-label" for="dueName">Payment name</label><input type="text" id="dueName" placeholder="e.g. Netflix" required maxlength="40"></div>
+      <div class="field-grid">
+        <div class="field"><label class="field-label" for="dueAmount">Amount</label><input type="number" id="dueAmount" min="0" step="any" required></div>
+        <div class="field"><label class="field-label" for="dueDate">Due date</label><input type="date" id="dueDate" required></div>
+      </div>
+      <div class="field"><label class="field-label" for="dueCategory">Category (optional)</label><select id="dueCategory"></select></div>
+      <div class="modal-actions"><button type="button" class="secondary-btn" data-close>Cancel</button><button type="submit" class="primary-btn">Save</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Budget modals -->
+<div class="modal-overlay" id="budgetModal" hidden>
+  <div class="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="budgetModalTitle">
+    <div class="modal-head"><h2 id="budgetModalTitle">Set monthly budget</h2><button class="icon-btn" data-close aria-label="Close"><i class="fa-solid fa-xmark"></i></button></div>
+    <form id="budgetForm">
+      <input type="hidden" id="budgetCatName">
+      <div class="field"><label class="field-label" for="budgetInput">Amount per month</label><input type="number" id="budgetInput" min="0" step="any" required></div>
+      <div class="modal-actions"><button type="button" class="secondary-btn" data-close>Cancel</button><button type="submit" class="primary-btn">Save</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Confirm -->
+<div class="modal-overlay" id="confirmModal" hidden>
+  <div class="modal modal-sm" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="modal-head"><h2 id="confirmTitle">Delete this?</h2><button class="icon-btn" data-close aria-label="Close"><i class="fa-solid fa-xmark"></i></button></div>
+    <p id="confirmMessage" class="confirm-text"></p>
+    <div class="modal-actions"><button type="button" class="secondary-btn" data-close>Cancel</button><button type="button" class="danger-btn" id="confirmOkBtn">Delete</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+<script src="script.js"></script>
+</body>
+</html>
